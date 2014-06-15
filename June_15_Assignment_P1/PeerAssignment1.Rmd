@@ -1,0 +1,188 @@
+Reproducible Research - June 2014
+========================================================
+Ron Mashrouteh - Reproducible Research - Peer assignment 1
+
+loading downloaded file **(activity.csv)**
+
+```{r echo=TRUE}
+ds <- read.csv("~/activity.csv")
+```
+
+creating my dataset (myds) to get setps, dates and intervals without NA
+
+```{r echo=TRUE}
+myds <- subset(ds, na.rm=TRUE, steps!=0, select=c(steps, date, interval))
+```
+
+globally declare **myds** so I don't have to keep typing myds$....
+
+```{r echo=TRUE}
+attach(myds)
+```
+
+mean total number of steps taken
+
+```{r echo=TRUE}
+mean(ds$steps, na.rm=TRUE)
+```
+
+histogram graph - steps taken per date
+
+```{r echo=TRUE}
+hist(steps, breaks=100, main="Histogram Graph - Steps", ylab="Date", xlab="steps")
+```
+
+**mean** and **median** total number of steps per day
+
+```{r echo=TRUE}
+perdaymean <- aggregate(list(steps=steps), na.rm=TRUE , list(dates = date), mean)
+perdaymean
+perdaymedian <- aggregate(list(steps=steps), na.rm=TRUE , list(date = date), median)
+perdaymedian
+```
+
+**Start preparing for plotting a graph of 5 minute interval**
+
+minimum number of steps
+
+```{r echo=TRUE}
+mi <- min(interval)
+mi
+```
+
+maximum number of steps
+
+```{r echo=TRUE}
+mx <- max(interval)
+mx
+```
+
+Generating aggreate of average steps per interval
+
+```{r echo=TRUE}
+perdayavg <- aggregate(list(steps = steps), na.rm=TRUE , list(interval = interval), mean)
+perdayavg
+```
+
+Plotting the graph according to the aggregate we generated above
+
+```{r echo=TRUE}
+plot(perdayavg, type = "l", xlim=c(mi, mx), lwd = 2, main="Time Interval", ylab="Avg. steps all day", xlab="5-minute interval", col="blue")
+```
+
+**which 5-minute interval contains the maximum number of steps**
+
+MaxVal_avgsteps - get the maximum number of steps
+InterVal - get the Interval value for MaxVal_avgsteps.
+```{r echo=TRUE}
+MaxVal_avgsteps <- max(perdayavg$steps)
+InterVal <- subset(perdayavg$interval, perdayavg$steps == MaxVal_avgsteps)
+
+MaxVal_avgsteps
+InterVal
+```
+
+Inputing missing value
+========================================================
+
+Loading the downloaded file as a new dataset
+
+```{r echo=TRUE}
+Nwds <- read.csv("~/activity.csv")
+```
+
+Calculating total number of missing values (NAs)
+
+```{r echo=TRUE}
+NAs <- length(Nwds$step[Nwds$step =="NA"])
+NAs
+```
+
+Subset & Fill the missing value with 0s (replacing NA with 0)
+
+```{r echo=TRUE}
+Nwds <- subset(Nwds, select=c(steps, date, interval))
+Nwds
+```
+
+Setting to 0s
+
+```{r echo=TRUE}
+Nwds[is.na(Nwds)] <- 0
+Nwds
+```
+
+Remove all the rows that contain NA values
+
+We load a fresh copy of the csv file to get all data with NA since we substitute them with 0s in the previous step
+
+```{r echo=TRUE}
+Newds <- read.csv("~/activity.csv")
+Newds
+```
+
+Remove all rows that contan NA
+
+```{r echo=TRUE}
+remv <-na.omit(Newds)
+remv
+```
+
+Calculate the mean and median values after removing all rows that contained NA
+
+```{r echo=TRUE}
+perdayavg_mean_noNA <- aggregate(list(steps = remv$steps), list(interval = remv$interval), mean)
+perdayavg_median_noNA <- aggregate(list(steps = remv$steps), list(interval = remv$interval), median)
+```
+
+Generate histogram graphs for mean and median
+
+```{r echo=TRUE}
+hist(perdayavg_mean_noNA$steps, breaks=100, main="Histogram Graph After NA removal- Steps", ylab="Interval", xlab="steps")
+```
+
+```{r echo=TRUE}
+hist(perdayavg_median_noNA$steps, breaks=10, main="Histogram Graph After NA removal- Steps", ylab="Interval", xlab="steps")
+```
+
+Loadin the csv file one more time for the last part of the assignment
+
+```{r echo=TRUE}
+lastpart <- read.csv("~/activity.csv")
+
+NAs <- length(lastpart$step[lastpart$step =="NA"])
+shwval <- NAs
+
+lastpart[is.na(lastpart)] <- 0
+```
+
+Specifying the if the date is a weekday or weekend
+
+```{r echo=TRUE}
+lastpart$weekday = weekdays(as.Date(lastpart$date, format = "%Y-%m-%d"))
+lastpart$weekday.type = factor(ifelse(lastpart$weekday == "Sunday" | lastpart$weekday == 
+                                             "Saturday", "weekend", "weekday"), levels = c("weekday", "weekend"))
+
+
+lastpart.weekdays = lastpart[lastpart$weekday.type == "weekday", ]
+lastpart.weekend = lastpart[lastpart$weekday.type == "weekend", ]
+avg.steps.per.interval.weekdays = sapply(split(lastpart.weekdays$steps, lastpart.weekdays$interval), mean)
+avg.steps.per.interval.weekend = sapply(split(lastpart.weekend$steps, lastpart.weekend$interval), mean)
+```
+
+Creating the panel plot for the 5-minute interval.
+
+```{r echo=TRUE}
+DoPlot = function() {
+    par(mfrow = c(2, 1), mar = c(4, 5, 2, 2))
+    plot(avg.steps.per.interval.weekend, type = "l", yaxt = "n", ylim = c(0, 250), xlim = c(0, 300), main = "weekend", ylab = "", xlab = "Interval")
+    axis(side = 4, at = seq(0, 250, 50), labels = seq(0, 250, 50))
+    plot(avg.steps.per.interval.weekdays, type = "l", ylim = c(0, 250), xlim = c(0, 300), main = "weekday", ylab = "", xlab = "Interval")
+    par(mfrow = c(1, 1), mar = c(3, 2, 2, 2))
+    mtext(text = "Number of steps", side = 2)
+    par(mar = c(5, 5, 5, 2))
+}
+
+DoPlot()
+```
+
